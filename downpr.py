@@ -45,10 +45,17 @@ def getfwlevel(content):
     return level
 
 def searchfilename(content, level, pr):
-    fwname = re.search("(filename=[a-z]+.*\.img)", content).group(0)
-    fwname=fwname[9:]
-    hexname=fwname.replace(".img", ".hex")
-    configname="config_private.json"
+    fwname=''
+    hexname=''
+    configname=''
+    filename = re.search("(filename=[a-z]+.*\.img)", content)
+    if (filename is None):
+        print("Cannot find the image file name, may be the packrat server is abnormal")
+    else:
+        fwname = re.search("(filename=[a-z]+.*\.img)", content).group(0)
+        fwname=fwname[9:]
+        hexname=fwname.replace(".img", ".hex")
+        configname="config_private.json"
     return fwname, hexname, configname
 
 def generatefilename(pr, level, fwname, hexname, configname):
@@ -60,15 +67,17 @@ def generatefilename(pr, level, fwname, hexname, configname):
     return fwname, hexname, configname
 
 def download(url, filetype, filename, callbackfunc):
+    errflag = 0
+    ans = "n"
     while True:
-        errflag = 0
         try:
-            savefilename = filename
-            name = os.path.basename(filename)
-            dirname = os.path.dirname(filename)
+            if (errflag == 0):
+                savefilename = filename
+                name = os.path.basename(filename)
+                dirname = os.path.dirname(filename)
+                name = "Unconfirmed_" + name
+                filename = os.path.join(dirname, name)
             print("Download %s file: %s" % (filetype, name))
-            name = "Unconfirmed_" + name
-            filename = os.path.join(dirname, name)
             if (os.path.exists(filename)):
                 os.remove(filename)
             request.urlretrieve(url, filename, callbackfunc)
@@ -127,6 +136,8 @@ def getdownloadparameter(pr):
         else:
             fwlevel = getfwlevel(webcontent)
             fwname, hexname, configname = searchfilename(webcontent, fwlevel, pr)
+            if (fwname == '' or hexname == '' or configname == ''):
+                errflag = 1
 
             config_url = url_format.format(pr, configname)
             image_url = url_format.format(pr, fwname)
@@ -153,7 +164,7 @@ def getdownloadparameter(pr):
 
 def main(pr):
     #set download timeout 30s
-    socket.setdefaulttimeout(30)
+    socket.setdefaulttimeout(10)
 
     #get download parameters
     errflag, hex_url, config_url, image_url, hex_file, config_file, image_file = getdownloadparameter(pr)
@@ -184,3 +195,5 @@ if __name__ == "__main__":
     except BaseException as e:
         if isinstance(e, KeyboardInterrupt):
             sys.exit(0)
+        else:
+            print(e)
