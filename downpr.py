@@ -82,6 +82,7 @@ def download(url, filetype, filename, callbackfunc):
                 os.remove(filename)
             request.urlretrieve(url, filename, callbackfunc)
             print(", Actual size: %.2f KB" % (os.path.getsize(filename)/1024))
+            errflag = 0
             if (os.path.exists(savefilename)):
                 if (overwrite):
                     os.remove(savefilename)
